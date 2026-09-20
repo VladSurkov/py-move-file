@@ -2,38 +2,34 @@ import os
 
 
 def move_file(command: str) -> None:
-    [cmd, file_to_move, place_to_move] = command.split()
-    folders = place_to_move.split("/")
-    new_file_name = folders[-1]
+    try:
+        [cmd, file_to_move, place_to_move] = command.split()
 
-    if cmd == "mv":
-        try:
-            with open(file_to_move, "r") as file:
-                if len(folders) > 1:
-                    if not os.path.isdir(folders[0]):
-                        for index in range(0, len(folders) - 1):
-                            os.mkdir(folders[index])
-                            os.chdir(folders[index])
-                    else:
-                        os.chdir(folders[0])
+        if cmd != "mv":
+            raise ValueError
+    except ValueError:
+        print("Invalid command")
+        raise
 
-                        for index in range(1, len(folders) - 1):
-                            if os.path.isdir(folders[index]):
-                                os.chdir(folders[index])
-                            else:
-                                os.mkdir(folders[index])
-                                os.chdir(folders[index])
+    parts_of_path = place_to_move.split("/")
+    new_file_name = parts_of_path[-1]
 
-                    with open(new_file_name, "w") as new_file:
-                        new_file.write(file.read())
+    try:
+        if len(parts_of_path) == 1:
+            os.rename(file_to_move, new_file_name)
+            return
 
-                    for _ in range(0, len(folders) - 1):
-                        os.chdir("..")
+        base_path = os.getcwd()
+        path_to_move = os.path.join(base_path, *parts_of_path[:-1])
 
-                    os.remove(file_to_move)
-                else:
-                    os.rename(file_to_move, new_file_name)
-        except FileExistsError:
-            raise
-    else:
-        print(f"Unknown command {cmd}")
+        os.makedirs(path_to_move, exist_ok=True)
+
+        with (
+            open(file_to_move, "r") as file,
+            open(os.path.join(path_to_move, new_file_name), "w") as new_file
+        ):
+            new_file.write(file.read())
+
+        os.remove(file_to_move)
+    except FileExistsError:
+        raise
